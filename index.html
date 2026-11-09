@@ -1803,6 +1803,123 @@ async function handleLogout() {
 
         }, 3000);
 
+ // ==========================================
+// LOAD MARKET MASTER INSPECTION LOGS
+// ==========================================
+
+async function loadMarketMasterLogs() {
+    const tableBody = document.getElementById('master-logs-body');
+
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="7" style="padding: 15px; text-align: center;">
+                Loading inspection records...
+            </td>
+        </tr>
+    `;
+
+    try {
+        // Get the currently authenticated user
+        const { data: { user }, error: userError } =
+            await supabaseClient.auth.getUser();
+
+        if (userError || !user) {
+            throw new Error('No authenticated user found.');
+        }
+
+        // Get the Market Master's assigned market
+        const { data: profile, error: profileError } =
+            await supabaseClient
+                .from('profiles')
+                .select('market_id')
+                .eq('id', user.id)
+                .single();
+
+        if (profileError || !profile || !profile.market_id) {
+            throw new Error('Unable to identify your assigned wet market.');
+        }
+
+        // Retrieve inspections from the assigned market
+        const { data: inspections, error: inspectionError } =
+            await supabaseClient
+                .from('inspections')
+                .select(`
+                    id,
+                    created_at,
+                    ph,
+                    nh3,
+                    h2s,
+                    classification,
+                    stalls (
+                        stall_number
+                    ),
+                    devices (
+                        device_uid
+                    )
+                `)
+                .eq('market_id', profile.market_id)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+        if (inspectionError) {
+            throw inspectionError;
+        }
+
+        // Display empty state if there are no records
+        if (!inspections || inspections.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding: 15px; text-align: center;">
+                        No inspection records available yet.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Populate the table
+        tableBody.innerHTML = inspections.map(record => {
+            const timestamp = record.created_at
+                ? new Date(record.created_at).toLocaleString()
+                : 'N/A';
+
+            const nodeID = record.devices?.device_uid || 'N/A';
+            const stall = record.stalls?.stall_number || 'N/A';
+
+            const ph = record.ph ?? 'N/A';
+            const nh3 = record.nh3 ?? 'N/A';
+            const h2s = record.h2s ?? 'N/A';
+
+            const status = record.classification || 'Pending';
+
+            return `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px;">${timestamp}</td>
+                    <td style="padding: 8px;">${nodeID}</td>
+                    <td style="padding: 8px;">${stall}</td>
+                    <td style="padding: 8px;">${ph}</td>
+                    <td style="padding: 8px;">${nh3}</td>
+                    <td style="padding: 8px;">${h2s}</td>
+                    <td style="padding: 8px;">${status}</td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Market Master Logs Error:', error);
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" style="padding: 15px; text-align: center; color: #dc2626;">
+                    Unable to load inspection records.
+                </td>
+            </tr>
+        `;
+    }
+}
+
     </script>
 
 </body>
