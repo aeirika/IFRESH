@@ -1357,6 +1357,11 @@ function toggleLoginFields() {
 
         configureRoleTabs(currentRole);
 
+        // Load inspection records for Market Master
+        if (currentRole === 'Market Master') {
+            loadMarketMasterLogs();
+        }
+
         // 7. Clear login fields
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';
