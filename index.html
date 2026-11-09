@@ -1676,18 +1676,117 @@ async function handleLogout() {
             document.getElementById('vendor-meat-cuts').value = '';
         }
 
-        function registerVendorStall() {
-            const market = document.getElementById('vendor-market-registration').value;
-            const stall = document.getElementById('vendor-stall-registration').value.trim();
-            const output = document.getElementById('vendor-registration-output');
-            if (!market || !stall) {
-                alert('Please select your local wet market and enter your stall name or number.');
-                return;
-            }
-            const registration = { market, stall, submittedAt: new Date().toISOString() };
-            localStorage.setItem('ifresh_vendor_stall_registration', JSON.stringify(registration));
-            output.innerHTML = `<strong>Registration submitted</strong><br>${stall}<br>${market}<br><span style="color:var(--success);">Saved on this device for demonstration.</span>`;
+async function registerVendorStall() {
+    const market = document.getElementById('vendor-market-registration').value;
+    const stallName = document.getElementById('vendor-stall-name').value.trim();
+    const stallNumber = document.getElementById('vendor-stall-registration').value.trim();
+    const output = document.getElementById('vendor-registration-output');
+
+    if (!market || !stallName || !stallNumber) {
+        alert('Please complete all stall registration fields.');
+        return;
+    }
+
+    try {
+        output.textContent = 'Processing stall registration...';
+
+        // Get logged-in Vendor
+        const { data: { user }, error: userError } =
+            await supabaseClient.auth.getUser();
+
+        if (userError || !user) {
+            throw new Error('Please log in again.');
         }
+
+        // Get Vendor profile and assigned market
+        const { data: profile, error: profileError } =
+            await supabaseClient
+                .from('profiles')
+                .select('role, market_id')
+                .eq('id', user.id)
+                .single();
+
+        if (profileError) throw profileError;
+
+        if (profile.role !== 'vendor' || !profile.market_id) {
+            throw new Error('This account is not assigned to a wet market.');
+        }
+
+        // Verify assigned market
+        const { data: assignedMarket, error: marketError } =
+            await supabaseClient
+                .from('markets')
+                .select('name')
+                .eq('id', profile.market_id)
+                .single();
+
+        if (marketError) throw marketError;
+
+        if (market !== assignedMarket.name) {
+            throw new Error(
+                'You can only register a stall in your assigned wet market: ' +
+                assignedMarket.name
+            );
+        }
+
+        // Check if Vendor already has a registered stall
+        const { data: existingStall, error: stallError } =
+            await supabaseClient
+                .from('stalls')
+                .select('id')
+                .eq('vendor_id', user.id)
+                .maybeSingle();
+
+        if (stallError) throw stallError;
+
+        let result;
+
+        if (existingStall) {
+            // Update existing stall instead of creating a duplicate
+            result = await supabaseClient
+                .from('stalls')
+                .update({
+                    stall_name: stallName,
+                    stall_number: stallNumber
+                })
+                .eq('id', existingStall.id)
+                .select()
+                .single();
+
+        } else {
+            // Register a new stall
+            result = await supabaseClient
+                .from('stalls')
+                .insert({
+                    vendor_id: user.id,
+                    market_id: profile.market_id,
+                    stall_name: stallName,
+                    stall_number: stallNumber
+                })
+                .select()
+                .single();
+        }
+
+        if (result.error) throw result.error;
+
+        output.innerHTML = `
+            <strong>Stall registration saved!</strong><br>
+            ${stallName}<br>
+            ${stallNumber}<br>
+            ${assignedMarket.name}<br>
+            <span style="color:var(--success);">
+                Successfully saved to Supabase.
+            </span>
+        `;
+
+        alert('Your stall registration has been saved successfully!');
+
+    } catch (error) {
+        console.error('Stall Registration Error:', error);
+        output.textContent = 'Registration failed: ' + error.message;
+        alert(error.message);
+    }
+}
         
         function getMarketLogs() {
             if (!currentMarket) return [];
