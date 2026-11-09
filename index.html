@@ -1256,66 +1256,120 @@
             document.getElementById('reg-market').required = isVendor;
         }
 
-        async function handleLogin(evt) {
-            evt.preventDefault();
-            const role = document.getElementById('login-role').value;
-            
-            if (role === 'Market Master') {
-                const inputtedKey = document.getElementById('login-master-key').value.trim();
-                
-                if (validMasterKeys[inputtedKey]) {
-                    // Valid key
-                    const assignedMarket = validMasterKeys[inputtedKey];
-                    currentMarket = assignedMarket;
-                    alert(`Master Key authenticated for ${assignedMarket}. Accessing Market Master Dashboard.`);
-                    
-                    currentRole = role;
-                    document.getElementById('login-overlay').style.display = 'none';
-                    document.getElementById('app-container').style.display = 'flex';
-                    document.getElementById('badge-profile-display').innerHTML =
-                        `<i class="fa-solid fa-user-shield" style="opacity: 0.6;"></i> ${currentRole} (${assignedMarket})`;
-                    configureRoleTabs(currentRole);
-                    document.getElementById('login-master-key').value = '';
+ async function handleLogin(evt) {
+    evt.preventDefault();
 
-                } else {
-                    // Invalid key
-                    alert('Invalid Master Key. Please check the assigned key for your wet market.');
-                    return;
-                }
-            } else {
-                // Standard Consumer / Vendor Login
-                const email = document.getElementById('login-email').value.trim().toLowerCase();
-                const password = document.getElementById('login-password').value;
-                const account = getRegisteredAccounts().find(item => item.email === email);
+    const selectedRole = document.getElementById('login-role').value;
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
 
-                if (!account) {
-                    alert('No registered account was found for this email. Please create an account first.');
-                    return;
-                }
-                if (account.role !== role) {
-                    alert('The selected role does not match this registered account.');
-                    return;
-                }
-                try {
-                    const result = await hashPassword(password, account.passwordSalt);
-                    if (result.hash !== account.passwordHash) {
-                        alert('Incorrect email or password.');
-                        return;
-                    }
-                } catch (error) {
-                    alert(error.message || 'Unable to verify your account securely.');
-                    return;
-                }
+    // Convert frontend role names to Supabase database roles
+    const roleMapping = {
+        'Consumer': 'consumer',
+        'Wet Market Vendor': 'vendor',
+        'Market Master': 'market_master'
+    };
 
-                currentRole = role;
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('app-container').style.display = 'flex';
-                document.getElementById('badge-profile-display').innerHTML =
-                    `<i class="fa-solid fa-user-shield" style="opacity: 0.6;"></i> ${currentRole === 'Wet Market Vendor' ? 'Vendor' : currentRole}`;
-                configureRoleTabs(currentRole);
-                document.getElementById('login-password').value = '';
-            }
+    try {
+        // 1. Authenticate using Supabase
+        const { data: authData, error: authError } =
+            await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+        if (authError) {
+            throw authError;
         }
+
+        const user = authData.user;
+
+        // 2. Retrieve the user's actual profile and role
+        const { data: profile, error: profileError } =
+            await supabaseClient
+                .from('profiles')
+                .select('id, full_name, role, market_id')
+                .eq('id', user.id)
+                .single();
+
+        if (profileError || !profile) {
+            await supabaseClient.auth.signOut();
+            alert('Your account profile was not found. Please contact the administrator.');
+            return;
+        }
+
+        // 3. Verify that the selected role matches the database role
+        if (profile.role !== roleMapping[selectedRole]) {
+            await supabaseClient.auth.signOut();
+            alert('The selected role does not match your registered account.');
+            return;
+        }
+
+        // 4. Retrieve the assigned market, if applicable
+        currentMarket = null;
+
+        if (profile.market_id) {
+            const { data: market, error: marketError } =
+                await supabaseClient
+                    .from('markets')
+                    .select('name')
+                    .eq('id', profile.market_id)
+                    .single();
+
+            if (marketError || !market) {
+                await supabaseClient.auth.signOut();
+                alert('Unable to retrieve your assigned wet market.');
+                return;
+            }
+
+            currentMarket = market.name;
+        }
+
+        // 5. Set the authenticated user's role
+        const roleNames = {
+            consumer: 'Consumer',
+            vendor: 'Wet Market Vendor',
+            market_master: 'Market Master'
+        };
+
+        currentRole = roleNames[profile.role];
+
+        // 6. Display the correct dashboard
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-container').style.display = 'flex';
+
+        const badge = document.getElementById('badge-profile-display');
+
+        badge.innerHTML =
+            '<i class="fa-solid fa-user-shield" style="opacity: 0.6;"></i> ';
+
+        badge.appendChild(
+            document.createTextNode(
+                currentRole === 'Wet Market Vendor'
+                    ? 'Vendor'
+                    : currentRole
+            )
+        );
+
+        if (currentMarket) {
+            badge.appendChild(
+                document.createTextNode(` (${currentMarket})`)
+            );
+        }
+
+        configureRoleTabs(currentRole);
+
+        // 7. Clear login fields
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+
+        alert(`Welcome! You are now logged in as ${currentRole}.`);
+
+    } catch (error) {
+        console.error('Supabase Login Error:', error);
+        alert(error.message || 'Unable to log in. Please try again.');
+    }
+}
 
         async function handleRegister(evt) {
             evt.preventDefault();
@@ -1359,14 +1413,37 @@
             }
         }
 
-        function handleLogout() {
-            toggleMobileMenu(false);
-            currentMarket = null;
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('login-overlay').style.display = 'flex';
-            // Reset UI state
-            switchView({currentTarget: document.getElementById('scanner-tab')}, 'scanner-dashboard');
+async function handleLogout() {
+    try {
+        const { error } = await supabaseClient.auth.signOut();
+
+        if (error) {
+            throw error;
         }
+
+        // Reset user information
+        currentRole = "Consumer";
+        currentMarket = null;
+
+        // Hide dashboard and show login
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('login-overlay').style.display = 'flex';
+
+        // Reset login fields
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+
+        // Reset dashboard view
+        switchView(
+            { currentTarget: document.getElementById('scanner-tab') },
+            'scanner-dashboard'
+        );
+
+    } catch (error) {
+        console.error('Logout Error:', error);
+        alert('Unable to log out. Please try again.');
+    }
+}
 
 
 
