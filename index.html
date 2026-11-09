@@ -973,29 +973,107 @@
                     </div>
                 </div>
 
-                <!-- Vendor Tools View -->
+<!-- Vendor Tools View -->
 <div id="vendor-tools-dashboard" class="app-view">
   <div class="card">
     <h3><i class="fa-solid fa-toolbox"></i> Vendor Tools</h3>
-    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">Manage the meat products sold at your stall and register your stall with its local wet market.</p>
+
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">
+      Manage your stall registration and available meat products.
+    </p>
+
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
+
+      <!-- PRODUCT MANAGEMENT -->
       <div style="border:1px solid var(--border-color);border-radius:12px;padding:20px;background:#fff;">
-        <h4 style="color:var(--dark-red);margin-bottom:8px;"><i class="fa-solid fa-list-check"></i> Update Meat Products</h4>
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:15px;">List the meat types, cuts, and current availability at your stall.</p>
-        <div class="form-group"><label>Type of Meat</label><select id="vendor-meat-type"><option value="Pork">Pork</option><option value="Beef">Beef</option><option value="Chicken">Chicken</option><option value="Other">Other</option></select></div>
-        <div class="form-group"><label>Specific Cuts / Products</label><input id="vendor-meat-cuts" type="text" placeholder="e.g., Liempo, Kasim, Ribs"></div>
-        <div class="form-group"><label>Availability</label><select id="vendor-meat-availability"><option>Available</option><option>Limited Stock</option><option>Out of Stock</option></select></div>
-        <button class="btn-primary" onclick="updateVendorProducts()">Save Product Update</button>
-        <div id="vendor-products-output" style="margin-top:12px;font-size:0.8rem;background:#f8fafc;padding:10px;border-radius:8px;">No product updates yet.</div>
+
+        <h4 style="color:var(--dark-red);margin-bottom:8px;">
+          <i class="fa-solid fa-list-check"></i> Update Meat Products
+        </h4>
+
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:15px;">
+          Add individual meat cuts and update their availability.
+        </p>
+
+        <div class="form-group">
+          <label>Type of Meat</label>
+          <select id="vendor-meat-type" required>
+            <option value="Pork">Pork</option>
+            <option value="Beef">Beef</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Specific Cut / Product</label>
+          <input id="vendor-meat-cuts" type="text"
+                 placeholder="e.g., Liempo, Kasim, Beef Ribs"
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label>Availability</label>
+          <select id="vendor-meat-availability" required>
+            <option value="Available">Available</option>
+            <option value="Limited Stock">Limited Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+        </div>
+
+        <button class="btn-primary" onclick="updateVendorProducts()">
+          Save Product Update
+        </button>
+
+        <div id="vendor-products-output"
+             style="margin-top:12px;font-size:0.8rem;background:#f8fafc;padding:10px;border-radius:8px;">
+          No product updates yet.
+        </div>
+
       </div>
+
+      <!-- STALL REGISTRATION -->
       <div style="border:1px solid var(--border-color);border-radius:12px;padding:20px;background:#fff;">
-        <h4 style="color:var(--dark-red);margin-bottom:8px;"><i class="fa-solid fa-store"></i> Register Your Stall</h4>
-        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:15px;">Connect your vendor account to the wet market where your stall operates.</p>
-        <div class="form-group"><label>Local Wet Market</label><select id="vendor-market-registration"><option value="">Select wet market</option><option>Wet Market 1</option><option>Wet Market 2</option><option>Wet Market 3</option></select></div>
-        <div class="form-group"><label>Stall Name / Number</label><input id="vendor-stall-registration" type="text" placeholder="e.g., Stall 04"></div>
-        <button class="btn-primary" onclick="registerVendorStall()">Submit Stall Registration</button>
-        <div id="vendor-registration-output" style="margin-top:12px;font-size:0.8rem;background:#f8fafc;padding:10px;border-radius:8px;">Your stall has not been registered yet.</div>
+
+        <h4 style="color:var(--dark-red);margin-bottom:8px;">
+          <i class="fa-solid fa-store"></i> Register Your Stall
+        </h4>
+
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:15px;">
+          Register your stall under your assigned wet market.
+        </p>
+
+        <div class="form-group">
+          <label>Local Wet Market</label>
+          <select id="vendor-market-registration" required>
+            <option value="">Select wet market</option>
+            <option value="Marikina Wet Market">Marikina Wet Market</option>
+            <option value="Altura Wet Market">Altura Wet Market</option>
+            <option value="Sampaloc Wet Market">Sampaloc Wet Market</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Stall Name</label>
+          <input id="vendor-stall-name" type="text"
+                 placeholder="e.g., Tawat Meat Shop" required>
+        </div>
+
+        <div class="form-group">
+          <label>Stall Number</label>
+          <input id="vendor-stall-registration" type="text"
+                 placeholder="e.g., Stall 04" required>
+        </div>
+
+        <button class="btn-primary" onclick="registerVendorStall()">
+          Submit Stall Registration
+        </button>
+
+        <div id="vendor-registration-output"
+             style="margin-top:12px;font-size:0.8rem;background:#f8fafc;padding:10px;border-radius:8px;">
+          Your stall has not been registered yet.
+        </div>
+
       </div>
+
     </div>
   </div>
 </div>
