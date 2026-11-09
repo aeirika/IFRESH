@@ -881,6 +881,14 @@
 
                                 <div class="metric-box">
 
+                                    <div class="metric-header">Methane (CH4) <i class="fa-solid fa-fire" style="color:#ed8936;"></i></div>
+                                
+                                    <div class="metric-value" id="ui-ch4">0 ppm</div>
+                                
+                                </div>
+
+                                <div class="metric-box">
+
                                     <div class="metric-header">Weight <i class="fa-solid fa-scale-balanced" style="color:#805ad5;"></i></div>
 
                                     <div class="metric-value" id="ui-weight">500 g</div>
@@ -1043,7 +1051,7 @@
 
                         <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; overflow-x: auto;">
 
-                            <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 10px;">Recent Edge Node Stream Buffer</h4>
+                            <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 10px;">Recent Inspection Records</h4>
 
                             <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
 
@@ -1053,14 +1061,13 @@
 
                                         <th style="padding: 8px;">Timestamp</th>
 
-                                        <th style="padding: 8px;">Node ID</th>
+                                        <th style="padding: 8px;">Inspection ID</th>
                                         <th style="padding: 8px;">Stall</th>
 
-                                        <th style="padding: 8px;">pH</th>
-
                                         <th style="padding: 8px;">NH3 (ppm)</th>
-
                                         <th style="padding: 8px;">H2S (ppm)</th>
+                                        <th style="padding: 8px;">CH4 (ppm)</th>
+                                        <th style="padding: 8px;">pH</th>
 
                                         <th style="padding: 8px;">Status</th>
 
@@ -1753,10 +1760,12 @@ async function handleLogout() {
         setInterval(() => {
 
             const ph = (5.5 + Math.random() * 1.5).toFixed(1);
-
+            
             const nh3 = (10 + Math.random() * 8).toFixed(1);
-
+            
             const h2s = (1.5 + Math.random() * 3).toFixed(1);
+            
+            const ch4 = (0.5 + Math.random() * 4).toFixed(1);
             
             // Randomly toggle weight to test accuracy limits (200g or >1000g)
 
@@ -1765,15 +1774,16 @@ async function handleLogout() {
             const currentWeight = weights[Math.floor(Math.random() * weights.length)];
 
 
-
             document.getElementById('ui-ph').innerText = ph;
-
+            
             document.getElementById('ui-nh3').innerText = `${nh3} ppm`;
-
+            
             document.getElementById('ui-h2s').innerText = `${h2s} ppm`;
-
+            
+            document.getElementById('ui-ch4').innerText = `${ch4} ppm`;
+            
             document.getElementById('ui-weight').innerText = `${currentWeight} g`;
-
+            
             document.getElementById('ui-weight-overlay').innerText = currentWeight;
 
 
@@ -1893,10 +1903,11 @@ async function loadMarketMasterLogs() {
             const nodeID = record.devices?.device_uid || 'N/A';
             const stall = record.stalls?.stall_number || 'N/A';
 
-            const ph = record.ph ?? 'N/A';
             const nh3 = record.nh3 ?? 'N/A';
             const h2s = record.h2s ?? 'N/A';
-
+            const ch4 = record.ch4 ?? 'N/A';
+            const ph = record.ph ?? 'N/A';
+            
             const status = record.classification || 'Pending';
 
             return `
@@ -1904,9 +1915,10 @@ async function loadMarketMasterLogs() {
                     <td style="padding: 8px;">${timestamp}</td>
                     <td style="padding: 8px;">${nodeID}</td>
                     <td style="padding: 8px;">${stall}</td>
-                    <td style="padding: 8px;">${ph}</td>
                     <td style="padding: 8px;">${nh3}</td>
                     <td style="padding: 8px;">${h2s}</td>
+                    <td style="padding: 8px;">${ch4}</td>
+                    <td style="padding: 8px;">${ph}</td>
                     <td style="padding: 8px;">${status}</td>
                 </tr>
             `;
@@ -1917,7 +1929,7 @@ async function loadMarketMasterLogs() {
 
         tableBody.innerHTML = `
             <tr>
-                <td colspan="7" style="padding: 15px; text-align: center; color: #dc2626;">
+                <td colspan="8" style="padding: 15px; text-align: center; color: #dc2626;">
                     Unable to load inspection records.
                 </td>
             </tr>
