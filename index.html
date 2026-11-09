@@ -1216,22 +1216,20 @@
             };
         }
 
-        function toggleLoginFields() {
-            const role = document.getElementById('login-role').value;
-            const standardFields = document.getElementById('standard-login-fields');
-            const masterKeyField = document.getElementById('master-key-login-field');
-            const createLink = document.getElementById('create-account-link');
+function toggleLoginFields() {
+    const role = document.getElementById('login-role').value;
+    const standardFields = document.getElementById('standard-login-fields');
+    const masterKeyField = document.getElementById('master-key-login-field');
+    const createLink = document.getElementById('create-account-link');
 
-            if (role === 'Market Master') {
-                standardFields.style.display = 'none';
-                createLink.style.display = 'none';
-                masterKeyField.style.display = 'block';
-            } else {
-                standardFields.style.display = 'block';
-                createLink.style.display = 'block';
-                masterKeyField.style.display = 'none';
-            }
-        }
+    // All roles use Supabase email and password
+    standardFields.style.display = 'block';
+    masterKeyField.style.display = 'none';
+
+    // Market Masters cannot create accounts through public registration
+    createLink.style.display =
+        (role === 'Market Master') ? 'none' : 'block';
+}
 
         function toggleAuthMode(evt) {
             evt.preventDefault();
