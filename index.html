@@ -1138,11 +1138,21 @@
     <!-- Map library -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <!-- Logic -->
 
     <script>
 
         let currentRole = "Consumer";
+        // SUPABASE CONNECTION
+        const SUPABASE_URL = "https://lfyqzgvovrhtdradgfwv.supabase.co";
+        const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_nuaCE4gJbkMh59enmUIVdw_W7xLtX5L";
+
+    const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+);
         let currentMarket = null;
         let selectedMeatType = null;
         let testLocationMap = null;
