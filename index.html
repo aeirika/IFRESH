@@ -1645,31 +1645,124 @@ async function handleLogout() {
                 : 'No stalls are currently flagged.';
         }
 
-        function downloadSensorCSV() {
-            if (!currentMarket) {
-                alert('Market information is not available. Please sign in again with your Market Master key.');
-                return;
-            }
-            const records = getMarketLogs();
-            const headers = ['Wet Market', 'Timestamp', 'Node ID', 'Stall', 'Meat Type', 'pH', 'NH3 (ppm)', 'H2S (ppm)', 'Weight (g)', 'Status', 'Compliance Flag'];
-            const rows = records.map(record => [
-                record.market, record.timestamp, record.node, `Stall ${record.stall}`, record.meat,
-                record.ph, record.nh3, record.h2s, record.weight, record.status,
-                record.flagged ? 'Flagged' : 'Within monitored limits'
-            ]);
-            const csv = [headers, ...rows].map(row =>
-                row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')
-            ).join('\r\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `iFRESH_${currentMarket.replace(/\s+/g, '_')}_Sensor_Logs.csv`;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        async function downloadSensorCSV() {
+    if (!currentMarket) {
+        alert('Market information is not available. Please sign in again.');
+        return;
+    }
+
+    try {
+        // Get the authenticated user
+        const { data: { user }, error: userError } =
+            await supabaseClient.auth.getUser();
+
+        if (userError || !user) {
+            throw new Error('You are not currently logged in.');
         }
+
+        // Retrieve the user's assigned market
+        const { data: profile, error: profileError } =
+            await supabaseClient
+                .from('profiles')
+                .select('market_id')
+                .eq('id', user.id)
+                .single();
+
+        if (profileError || !profile || !profile.market_id) {
+            throw new Error('Unable to identify your assigned wet market.');
+        }
+
+        // Retrieve actual inspection records from Supabase
+        const { data: records, error: recordsError } =
+            await supabaseClient
+                .from('inspections')
+                .select(`
+                    created_at,
+                    meat_type,
+                    nh3,
+                    h2s,
+                    ph,
+                    weight_g,
+                    classification,
+                    stalls (stall_number),
+                    devices (device_uid)
+                `)
+                .eq('market_id', profile.market_id)
+                .order('created_at', { ascending: false });
+
+        if (recordsError) {
+            throw recordsError;
+        }
+
+        if (!records || records.length === 0) {
+            alert('There are no inspection records available to export.');
+            return;
+        }
+
+        // CSV column headings
+        const headers = [
+            'Wet Market',
+            'Timestamp',
+            'Node ID',
+            'Stall',
+            'Meat Type',
+            'NH3 (ppm)',
+            'H2S (ppm)',
+            'CH4 (ppm)',
+            'pH',
+            'Weight (g)',
+            'Status'
+        ];
+
+        // Convert Supabase records into CSV rows
+        const rows = records.map(record => [
+            currentMarket,
+            record.created_at
+                ? new Date(record.created_at).toLocaleString()
+                : 'N/A',
+            record.devices?.device_uid || 'N/A',
+            record.stalls?.stall_number || 'N/A',
+            record.meat_type || 'N/A',
+            record.nh3 ?? 'N/A',
+            record.h2s ?? 'N/A',
+            record.ch4 ?? 'N/A',
+            record.ph ?? 'N/A',
+            record.weight_g ?? 'N/A',
+            record.classification || 'Pending'
+        ]);
+
+        // Generate CSV content
+        const csv = [headers, ...rows]
+            .map(row =>
+                row.map(value =>
+                    `"${String(value).replace(/"/g, '""')}"`
+                ).join(',')
+            )
+            .join('\r\n');
+
+        const blob = new Blob(
+            ['\uFEFF' + csv],
+            { type: 'text/csv;charset=utf-8;' }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download =
+            `iFRESH_${currentMarket.replace(/\s+/g, '_')}_Sensor_Logs.csv`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    } catch (error) {
+        console.error('CSV Export Error:', error);
+        alert(error.message || 'Unable to download the CSV report.');
+    }
+}
 
         function selectMeatType(type, button) {
             selectedMeatType = type;
