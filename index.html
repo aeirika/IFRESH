@@ -1371,47 +1371,73 @@
     }
 }
 
-        async function handleRegister(evt) {
-            evt.preventDefault();
-            const role = document.getElementById('reg-role').value;
-            const name = document.getElementById('reg-name').value.trim();
-            const email = document.getElementById('reg-email').value.trim().toLowerCase();
-            const password = document.getElementById('reg-password').value;
-            const confirmPassword = document.getElementById('reg-confirm-password').value;
-            const market = document.getElementById('reg-market').value;
+async function handleRegister(evt) {
+    evt.preventDefault();
 
-            if (!name) { alert(role === 'Consumer' ? 'Please enter your full name.' : 'Please enter your stall name.'); return; }
-            if ((role === 'Wet Market Vendor' || role === 'Vendor') && !market) { alert('Please select your local wet market.'); return; }
-            if (password.length < 8) { alert('Password must contain at least 8 characters.'); return; }
-            if (password !== confirmPassword) { alert('Passwords do not match.'); return; }
+    const role = document.getElementById('reg-role').value;
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const confirmPassword = document.getElementById('reg-confirm-password').value;
 
-            const accounts = getRegisteredAccounts();
-            if (accounts.some(item => item.email === email)) {
-                alert('An account with this email is already registered. Please sign in instead.');
-                return;
+    // Only Consumer registration is publicly allowed
+    if (role !== 'Consumer') {
+        alert('Vendor accounts are provided by the market administrator. Please contact your Market Master.');
+        return;
+    }
+
+    if (!name) {
+        alert('Please enter your full name.');
+        return;
+    }
+
+    if (password.length < 8) {
+        alert('Password must contain at least 8 characters.');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        alert('Passwords do not match.');
+        return;
+    }
+
+    try {
+        // Register through Supabase Authentication
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    full_name: name
+                }
             }
+        });
 
-            try {
-                const passwordData = await hashPassword(password);
-                accounts.push({
-                    name, email, role,
-                    market: (role === 'Wet Market Vendor' || role === 'Vendor') ? market : null,
-                    passwordSalt: passwordData.salt,
-                    passwordHash: passwordData.hash,
-                    createdAt: new Date().toISOString()
-                });
-                saveRegisteredAccounts(accounts);
-                document.getElementById('reg-password').value = '';
-                document.getElementById('reg-confirm-password').value = '';
-                document.getElementById('login-email').value = email;
-                document.getElementById('reg-name').value = '';
-                document.getElementById('register-box').style.display = 'none';
-                document.getElementById('login-box').style.display = 'block';
-                alert('Account created successfully. Please sign in using your registered email and password.');
-            } catch (error) {
-                alert(error.message || 'Unable to create the account securely.');
-            }
+        if (error) {
+            throw error;
         }
+
+        // Clear registration fields
+        document.getElementById('reg-password').value = '';
+        document.getElementById('reg-confirm-password').value = '';
+        document.getElementById('reg-name').value = '';
+
+        document.getElementById('login-email').value = email;
+
+        document.getElementById('register-box').style.display = 'none';
+        document.getElementById('login-box').style.display = 'block';
+
+        if (data.session) {
+            alert('Account created successfully! You can now sign in.');
+        } else {
+            alert('Registration successful! Please check your email to verify your account before signing in.');
+        }
+
+    } catch (error) {
+        console.error('Registration Error:', error);
+        alert(error.message || 'Unable to create your account. Please try again.');
+    }
+}
 
 async function handleLogout() {
     try {
