@@ -150,6 +150,45 @@
         .vendor-tool-card h4 { color:var(--dark-red); margin-bottom:8px; }
         .vendor-tool-card > p { font-size:.8rem; color:var(--text-muted); margin-bottom:15px; }
 
+        /* MARKET SELECTION + INSPECTION RESULT FLOW */
+        .market-selection-card { margin-bottom:18px; padding:16px; border:1px solid var(--border-color); border-radius:12px; background:#fffafa; }
+        .market-selection-card label { display:block; margin-bottom:7px; font-size:.82rem; font-weight:700; color:var(--text-main); }
+        .market-selection-card select { width:100%; max-width:520px; min-height:46px; padding:11px 13px; border:1.5px solid var(--border-color); border-radius:10px; background:#fff; color:var(--text-main); font-size:.92rem; }
+        .market-selection-card select:focus { outline:none; border-color:var(--primary-red); box-shadow:0 0 0 3px rgba(211,47,47,.1); }
+        .market-selection-help { margin-top:7px; color:var(--text-muted); font-size:.76rem; line-height:1.45; }
+        #inspection-loading-overlay { position:fixed; inset:0; z-index:15000; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.72); backdrop-filter:blur(5px); }
+        #inspection-loading-overlay.active { display:flex; }
+        .inspection-progress-card { width:min(100%,460px); padding:30px 25px; border-radius:20px; background:#fff; text-align:center; box-shadow:0 25px 70px rgba(0,0,0,.25); }
+        .inspection-spinner { width:64px; height:64px; margin:0 auto 18px; border:5px solid #fee2e2; border-top-color:var(--primary-red); border-radius:50%; animation:ifreshSpin .9s linear infinite; }
+        @keyframes ifreshSpin { to { transform:rotate(360deg); } }
+        .inspection-progress-card h3 { margin-bottom:8px; color:var(--text-main); font-size:1.25rem; }
+        .inspection-progress-card p { color:var(--text-muted); font-size:.86rem; line-height:1.5; }
+        .inspection-progress-steps { margin-top:20px; display:grid; gap:10px; text-align:left; }
+        .inspection-progress-step { display:flex; align-items:center; gap:10px; color:var(--text-muted); font-size:.82rem; }
+        .inspection-progress-step i { width:18px; color:var(--primary-red); }
+        #inspection-result-overlay { position:fixed; inset:0; z-index:15001; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(15,23,42,.72); backdrop-filter:blur(5px); }
+        #inspection-result-overlay.active { display:flex; }
+        .inspection-result-card { width:min(100%,650px); max-height:92dvh; overflow-y:auto; padding:24px; border-radius:18px; background:#fff; box-shadow:0 25px 70px rgba(0,0,0,.25); }
+        .inspection-result-top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+        .inspection-result-top h3 { margin:0; font-size:1.1rem; }
+        .inspection-result-close { border:0; background:#f1f5f9; color:#334155; width:38px; height:38px; border-radius:50%; cursor:pointer; }
+        .inspection-result-status { padding:22px 15px; border-radius:14px; text-align:center; margin-bottom:18px; }
+        .inspection-result-status .result-label { font-size:clamp(1.7rem,6vw,2.4rem); font-weight:900; letter-spacing:1px; }
+        .inspection-result-status .result-subtitle { margin-top:5px; font-size:.83rem; }
+        .inspection-result-status.fresh { background:var(--success-bg); color:var(--success); }
+        .inspection-result-status.stale { background:var(--warning-bg); color:var(--warning); }
+        .inspection-result-status.spoiled { background:var(--danger-bg); color:var(--danger); }
+        .inspection-result-status.pending { background:#f1f5f9; color:#475569; }
+        .inspection-result-details { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:15px 0; }
+        .inspection-result-metric { padding:12px; border:1px solid var(--border-color); border-radius:10px; }
+        .inspection-result-metric small { display:block; color:var(--text-muted); font-size:.7rem; text-transform:uppercase; }
+        .inspection-result-metric strong { display:block; margin-top:5px; font-size:1.05rem; overflow-wrap:anywhere; }
+        .inspection-result-photo { width:100%; max-height:260px; object-fit:contain; background:#f8fafc; border-radius:12px; margin:10px 0; }
+        .inspection-result-note { color:var(--text-muted); font-size:.78rem; line-height:1.5; }
+        .inspection-result-actions { display:flex; gap:10px; margin-top:18px; }
+        .inspection-result-actions button { flex:1; }
+        @media (max-width:500px) { .inspection-result-card { padding:17px; } .inspection-result-details { grid-template-columns:1fr 1fr; } .inspection-result-actions { flex-direction:column; } }
+
         @media (max-width:1024px) {
             .dashboard-grid { grid-template-columns:1fr; }
             .metrics-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -209,7 +248,7 @@
     <!-- iFRESH ANIMATED SPLASH SCREEN -->
     <div id="splash-screen" aria-label="iFRESH loading screen">
         <div class="splash-content">
-            <img src="ifreshlogo.png" alt="iFRESH Logo" class="splash-logo">
+            <img src="ifreshlogo.jpg" alt="iFRESH Logo" class="splash-logo">
             <p class="splash-tagline">Know Your Meat. Beyond the Senses.</p>
             <div class="splash-loader"><div class="splash-loader-fill"></div></div>
         </div>
@@ -285,6 +324,14 @@
                         <div class="card">
                             <h3><i class="fa-solid fa-microchip"></i> Real-Time Feed</h3>
 
+                            <div class="market-selection-card">
+                                <label for="inspection-market-select"><i class="fa-solid fa-location-dot" style="color:var(--primary-red);margin-right:5px;"></i> Wet Market for This Inspection</label>
+                                <select id="inspection-market-select" onchange="handleInspectionMarketChange(this.value)">
+                                    <option value="">Loading wet markets...</option>
+                                </select>
+                                <p class="market-selection-help" id="inspection-market-help">Select the wet market where this meat sample is being inspected. All inspection photos and sensor records will use this market ID.</p>
+                            </div>
+
                             <div class="inspection-camera-header">
                                 <div><h4><i class="fa-solid fa-camera"></i> Meat Sample Camera</h4><p>Open the camera to begin visual meat inspection.</p></div>
                                 <div class="camera-header-buttons">
@@ -335,13 +382,13 @@
                         </div>
 
                         <div class="card">
-                            <h3><i class="fa-solid fa-brain"></i> Analysis Results</h3>
-                            <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:20px;">The iFRESH device uses sensors and a camera to determine if the meat is fresh, stale, or spoiled.</p>
-                            <div style="display:flex;flex-direction:column;gap:12px;">
-                                <div style="padding:18px;background:var(--success-bg);border-radius:8px;border-left:6px solid var(--success);"><strong style="color:var(--success);font-size:1.1rem;">Fresh Phase</strong><p style="font-size:.85rem;color:#22543d;margin-top:6px;">Low VOCs, standard oxymyoglobin color.</p></div>
-                                <div style="padding:18px;background:var(--warning-bg);border-radius:8px;border-left:6px solid var(--warning);"><strong style="color:var(--warning);font-size:1.1rem;">Stale Phase</strong><p style="font-size:.85rem;color:#7b341e;margin-top:6px;">Rising NH3, metmyoglobin shift detected.</p></div>
-                                <div style="padding:18px;background:var(--danger-bg);border-radius:8px;border-left:6px solid var(--danger);"><strong style="color:var(--danger);font-size:1.1rem;">Spoiled Phase</strong><p style="font-size:.85rem;color:#742a2a;margin-top:6px;">Critical H2S levels, structural degradation.</p></div>
+                            <h3><i class="fa-solid fa-brain"></i> Latest Inspection Result</h3>
+                            <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:18px;">The result appears here after the backend completes its sensor and image analysis.</p>
+                            <div id="latest-inspection-result" class="inspection-result-status pending">
+                                <div class="result-label">NOT ANALYZED</div>
+                                <div class="result-subtitle">Capture a meat sample to begin inspection.</div>
                             </div>
+                            <p class="inspection-result-note" id="latest-inspection-meta">No completed inspection is currently displayed.</p>
                         </div>
                     </div>
                 </div>
@@ -487,7 +534,12 @@
     <script>
         let currentRole = 'Consumer';
         let currentMarket = null;
+        let currentMarketId = null;
+        let assignedMarketId = null;
         let selectedMeatType = null;
+        let lastCapturedImageDataUrl = null;
+        // Create this bucket in Supabase Storage, or change this value to your existing bucket name.
+        const MEAT_IMAGE_BUCKET = 'meat-captures';
         let testLocationMap = null;
 
         // Supabase project connection. Keep the publishable key in the frontend; never use service_role here.
@@ -547,9 +599,11 @@
                 }
 
                 currentMarket = null;
+                currentMarketId = profile.market_id || null;
+                assignedMarketId = profile.market_id || null;
 
                 if (profile.market_id) {
-                    const { data:market, error:marketError } = await supabaseClient.from('markets').select('name').eq('id',profile.market_id).single();
+                    const { data:market, error:marketError } = await supabaseClient.from('markets').select('id,name').eq('id',profile.market_id).single();
                     if (marketError || !market) {
                         await supabaseClient.auth.signOut();
                         throw new Error('Unable to retrieve your assigned wet market.');
@@ -573,6 +627,7 @@
                 if (currentMarket) badge.appendChild(document.createTextNode(` (${currentMarket})`));
 
                 configureRoleTabs(currentRole);
+                await initializeInspectionMarketSelector();
                 if (currentRole === 'Market Master') await loadMarketMasterLogs();
 
                 document.getElementById('login-email').value = '';
@@ -626,6 +681,8 @@
                 if (error) throw error;
                 currentRole = 'Consumer';
                 currentMarket = null;
+                currentMarketId = null;
+                assignedMarketId = null;
                 document.getElementById('app-container').style.display = 'none';
                 document.getElementById('login-overlay').style.display = 'flex';
                 document.getElementById('login-email').value = '';
@@ -772,12 +829,17 @@
                 const {data:{user},error:userError} = await supabaseClient.auth.getUser();
                 if (userError || !user) throw new Error('You are not currently logged in.');
 
-                const {data:profile,error:profileError} = await supabaseClient.from('profiles').select('market_id').eq('id',user.id).single();
-                if (profileError || !profile || !profile.market_id) throw new Error('Unable to identify your assigned wet market.');
+                let exportMarketId = currentMarketId;
+                if (currentRole !== 'Consumer') {
+                    const {data:profile,error:profileError} = await supabaseClient.from('profiles').select('market_id').eq('id',user.id).single();
+                    if (profileError || !profile || !profile.market_id) throw new Error('Unable to identify your assigned wet market.');
+                    exportMarketId = profile.market_id;
+                }
+                if (!exportMarketId) throw new Error('Please select a wet market before exporting records.');
 
                 const {data:records,error:recordsError} = await supabaseClient.from('inspections')
                     .select(`created_at,meat_type,nh3,h2s,ch4,ph,weight_g,classification,stalls(stall_number),devices(device_uid)`)
-                    .eq('market_id',profile.market_id)
+                    .eq('market_id',exportMarketId)
                     .order('created_at',{ascending:false});
                 if (recordsError) throw recordsError;
                 if (!records || records.length === 0) {
@@ -929,20 +991,124 @@
             if (label) label.textContent = `${type} selected for inspection.`;
             const video = document.getElementById('pi-camera-video');
             const captureButton = document.getElementById('capture-meat-btn');
-            if (captureButton) captureButton.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0);
+            if (captureButton) captureButton.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0 && currentMarketId);
         }
 
-        function captureMeat() {
-            const video = document.getElementById('pi-camera-video');
-            if (!selectedMeatType) {
-                alert('Please select Pork or Beef first.');
-                return;
-            }
-            if (!video || video.readyState < 2 || !video.videoWidth) {
-                alert('The Raspberry Pi camera is not connected yet.');
-                return;
-            }
+        function setInspectionLoading(isLoading, message) {
+            const overlay = document.getElementById('inspection-loading-overlay');
+            const messageEl = document.getElementById('inspection-loading-message');
+            if (messageEl && message) messageEl.textContent = message;
+            if (overlay) overlay.classList.toggle('active', Boolean(isLoading));
+        }
 
+        function showInspectionStatus(targetId, classification, subtitle) {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            const normalized = String(classification || '').trim().toLowerCase();
+            const allowed = ['fresh','stale','spoiled'];
+            const status = allowed.includes(normalized) ? normalized : 'pending';
+            target.className = `inspection-result-status ${status}`;
+            const label = target.querySelector('.result-label');
+            const sub = target.querySelector('.result-subtitle');
+            if (label) label.textContent = status === 'pending' ? 'RESULT PENDING' : status.toUpperCase();
+            if (sub) sub.textContent = subtitle || (status === 'pending' ? 'The backend has not returned a completed classification yet.' : `${status.charAt(0).toUpperCase()+status.slice(1)} meat classification received from backend.`);
+        }
+
+        function renderInspectionResult(record, photoDataUrl, marketName) {
+            const details = document.getElementById('inspection-result-details');
+            const photo = document.getElementById('inspection-result-photo');
+            const meta = document.getElementById('inspection-result-meta');
+            const latest = document.getElementById('latest-inspection-result');
+            const latestMeta = document.getElementById('latest-inspection-meta');
+            const classification = record && record.classification ? record.classification : 'pending';
+            const created = record && record.created_at ? new Date(record.created_at).toLocaleString() : new Date().toLocaleString();
+
+            showInspectionStatus('inspection-result-status', classification,
+                classification === 'pending' ? 'The image was saved, but the backend classification is still pending.' : 'Classification returned by the iFRESH backend.');
+            showInspectionStatus('latest-inspection-result', classification,
+                classification === 'pending' ? 'Waiting for a completed backend classification.' : 'Latest result from the backend.');
+
+            if (details) {
+                const values = [
+                    ['Meat Type', record?.meat_type || selectedMeatType || 'N/A'],
+                    ['pH', record?.ph ?? 'N/A'],
+                    ['Ammonia', record?.nh3 == null ? 'N/A' : `${record.nh3} ppm`],
+                    ['H2S', record?.h2s == null ? 'N/A' : `${record.h2s} ppm`],
+                    ['CH4', record?.ch4 == null ? 'N/A' : `${record.ch4} ppm`],
+                    ['Weight', record?.weight_g == null ? 'N/A' : `${record.weight_g} g`]
+                ];
+                details.replaceChildren();
+                values.forEach(([label,value]) => {
+                    const item = document.createElement('div');
+                    item.className = 'inspection-result-metric';
+                    const small = document.createElement('small'); small.textContent = label;
+                    const strong = document.createElement('strong'); strong.textContent = value;
+                    item.append(small,strong); details.appendChild(item);
+                });
+            }
+            if (photo && photoDataUrl) { photo.src = photoDataUrl; photo.hidden = false; }
+            if (meta) meta.textContent = `${marketName || currentMarket || 'Wet market'} • ${created}${record?.id ? ` • Inspection ID: ${record.id}` : ''}`;
+            if (latestMeta) latestMeta.textContent = `${marketName || currentMarket || 'Wet market'} • ${created}`;
+            const overlay = document.getElementById('inspection-result-overlay');
+            if (overlay) overlay.classList.add('active');
+        }
+
+        function closeInspectionResult() {
+            const overlay = document.getElementById('inspection-result-overlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        function dataUrlToBlob(dataUrl) {
+            const parts = dataUrl.split(',');
+            const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+            const binary = atob(parts[1]);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new Blob([bytes], {type:mime});
+        }
+
+        async function saveCapturedImageToMarket(dataUrl, marketId, meatType) {
+            const blob = dataUrlToBlob(dataUrl);
+            const safeType = String(meatType || 'sample').toLowerCase().replace(/[^a-z0-9-]/g,'-');
+            const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+            const unique = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            const storagePath = `${marketId}/${safeType}/${stamp}_${unique}.jpg`;
+            const {data,error} = await supabaseClient.storage.from(MEAT_IMAGE_BUCKET).upload(storagePath,blob,{
+                contentType:'image/jpeg', upsert:false, cacheControl:'3600'
+            });
+            if (error) throw new Error(`Image upload failed. Check that the Supabase Storage bucket "${MEAT_IMAGE_BUCKET}" exists and allows uploads for this signed-in user. ${error.message}`);
+            return {path:data.path || storagePath, bucket:MEAT_IMAGE_BUCKET};
+        }
+
+        async function waitForBackendClassification(marketId, meatType, startedAt, maxWaitMs=30000) {
+            const deadline = Date.now() + maxWaitMs;
+            let latestRecord = null;
+            while (Date.now() < deadline) {
+                const {data,error} = await supabaseClient.from('inspections')
+                    .select('id,created_at,meat_type,ph,nh3,h2s,ch4,weight_g,classification')
+                    .eq('market_id',marketId)
+                    .eq('meat_type',meatType)
+                    .gte('created_at',startedAt)
+                    .order('created_at',{ascending:false})
+                    .limit(1);
+                if (error) throw error;
+                latestRecord = data && data.length ? data[0] : null;
+                if (latestRecord && ['fresh','stale','spoiled'].includes(String(latestRecord.classification || '').toLowerCase())) {
+                    return latestRecord;
+                }
+                await new Promise(resolve => setTimeout(resolve,2500));
+            }
+            return latestRecord;
+        }
+
+        async function captureMeat() {
+            const video = document.getElementById('pi-camera-video');
+            if (!selectedMeatType) { alert('Please select Pork or Beef first.'); return; }
+            if (!currentMarketId) { alert('Please select a wet market before capturing a sample.'); return; }
+            if (!video || video.readyState < 2 || !video.videoWidth) { alert('The Raspberry Pi camera is not connected yet.'); return; }
+
+            const captureButton = document.getElementById('capture-meat-btn');
+            let capturedImage = null;
             try {
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
@@ -950,14 +1116,102 @@
                 const context = canvas.getContext('2d');
                 if (!context) throw new Error('Unable to initialize image capture.');
                 context.drawImage(video,0,0,canvas.width,canvas.height);
-                const capturedImage = canvas.toDataURL('image/jpeg',.92);
+                capturedImage = canvas.toDataURL('image/jpeg',.92);
+                lastCapturedImageDataUrl = capturedImage;
                 document.getElementById('captured-meat-image').src = capturedImage;
                 document.getElementById('captured-image-preview').hidden = false;
-                document.getElementById('capture-preview-label').textContent = `${selectedMeatType} sample captured successfully. Preview only; image has not yet been uploaded to Supabase.`;
+                document.getElementById('capture-preview-label').textContent = `${selectedMeatType} sample captured for ${currentMarket}. Saving image and retrieving backend classification...`;
+
+                if (captureButton) captureButton.disabled = true;
+                setInspectionLoading(true,'Saving the captured image under the selected wet market, then waiting for the backend classification.');
+
+                const inspectionStartedAt = new Date().toISOString();
+                const savedImage = await saveCapturedImageToMarket(capturedImage,currentMarketId,selectedMeatType);
+                const record = await waitForBackendClassification(currentMarketId,selectedMeatType,inspectionStartedAt,30000);
+
+                setInspectionLoading(false);
+                renderInspectionResult(record,capturedImage,currentMarket);
+                const savedLabel = document.getElementById('capture-preview-label');
+                if (savedLabel) savedLabel.textContent = `Image saved to Supabase Storage: ${savedImage.path}`;
             } catch (error) {
-                console.error('Camera Capture Error:',error);
-                alert('Unable to capture the image. Please check the camera connection.');
+                console.error('Meat Inspection Error:',error);
+                setInspectionLoading(false);
+                alert(error.message || 'Unable to complete the meat inspection.');
+            } finally {
+                if (captureButton) captureButton.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0 && selectedMeatType && currentMarketId);
             }
+        }
+
+        async function initializeInspectionMarketSelector() {
+            const select = document.getElementById('inspection-market-select');
+            const help = document.getElementById('inspection-market-help');
+            if (!select) return;
+            select.innerHTML = '<option value="">Loading wet markets...</option>';
+            select.disabled = true;
+            try {
+                const {data:markets,error} = await supabaseClient.from('markets').select('id,name').order('name',{ascending:true});
+                if (error) throw error;
+                if (!markets || !markets.length) throw new Error('No wet markets are registered yet.');
+                select.replaceChildren();
+                if (currentRole === 'Consumer') {
+                    const placeholder = document.createElement('option');
+                    placeholder.value = ''; placeholder.textContent = 'Choose a wet market';
+                    select.appendChild(placeholder);
+                    markets.forEach(market => {
+                        const option = document.createElement('option');
+                        option.value = market.id; option.textContent = market.name;
+                        select.appendChild(option);
+                    });
+                    select.disabled = false;
+                    select.value = currentMarketId || '';
+                    if (help) help.textContent = 'Choose the wet market where the meat sample is being inspected. This market ID will organize the uploaded image and inspection record.';
+                    if (currentMarketId) handleInspectionMarketChange(currentMarketId);
+                    else { currentMarket = null; updateCaptureButtonState(); }
+                } else {
+                    const assigned = markets.find(market => String(market.id) === String(assignedMarketId));
+                    if (!assigned) throw new Error('Your account does not have a valid assigned wet market.');
+                    currentMarketId = assigned.id;
+                    currentMarket = assigned.name;
+                    const option = document.createElement('option');
+                    option.value = assigned.id; option.textContent = assigned.name;
+                    select.appendChild(option);
+                    select.value = assigned.id;
+                    select.disabled = true;
+                    if (help) help.textContent = `Your account is assigned to ${assigned.name}. Inspection records and images will be saved under this market.`;
+                }
+            } catch (error) {
+                console.error('Market Selector Error:',error);
+                select.innerHTML = '<option value="">Unable to load wet markets</option>';
+                if (help) help.textContent = error.message;
+            }
+            updateCaptureButtonState();
+        }
+
+        function handleInspectionMarketChange(marketId) {
+            const select = document.getElementById('inspection-market-select');
+            if (currentRole !== 'Consumer' && assignedMarketId) marketId = assignedMarketId;
+            currentMarketId = marketId || null;
+            if (select && currentMarketId) select.value = currentMarketId;
+            if (!currentMarketId) {
+                currentMarket = null;
+                const help = document.getElementById('inspection-market-help');
+                if (help) help.textContent = 'Please choose a wet market before capturing a meat sample.';
+                updateCaptureButtonState();
+                return;
+            }
+            const selectedOption = select?.selectedOptions?.[0];
+            currentMarket = selectedOption ? selectedOption.textContent : currentMarket;
+            const help = document.getElementById('inspection-market-help');
+            if (help) help.textContent = `Selected market: ${currentMarket}. Captured images are stored in this market's folder in Supabase Storage.`;
+            const badge = document.getElementById('badge-profile-display');
+            if (badge && currentRole === 'Consumer') badge.textContent = `Consumer (${currentMarket})`;
+            updateCaptureButtonState();
+        }
+
+        function updateCaptureButtonState() {
+            const video = document.getElementById('pi-camera-video');
+            const button = document.getElementById('capture-meat-btn');
+            if (button) button.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0 && selectedMeatType && currentMarketId);
         }
 
         function showGuide(role,button) {
@@ -1084,7 +1338,7 @@
                 document.getElementById('camera-placeholder').hidden = true;
                 video.style.display = 'block';
                 document.getElementById('camera-status').textContent = 'Raspberry Pi camera connected. Ready to capture.';
-                document.getElementById('capture-meat-btn').disabled = !selectedMeatType;
+                updateCaptureButtonState();
             });
 
             video.addEventListener('error',() => {
@@ -1095,5 +1349,41 @@
         // No random/demo telemetry runs here. Sensor cards remain in a waiting state
         // until updateSensorDisplay() receives actual ESP32/backend readings.
     </script>
+    <!-- Inspection processing overlay -->
+    <div id="inspection-loading-overlay" role="dialog" aria-modal="true" aria-live="polite" aria-label="Analyzing meat sample">
+        <div class="inspection-progress-card">
+            <div class="inspection-spinner" aria-hidden="true"></div>
+            <h3>Analyzing Meat Sample</h3>
+            <p id="inspection-loading-message">Please wait while iFRESH saves the captured image and retrieves the backend inspection result.</p>
+            <div class="inspection-progress-steps">
+                <div class="inspection-progress-step"><i class="fa-solid fa-camera"></i><span>Capturing meat image</span></div>
+                <div class="inspection-progress-step"><i class="fa-solid fa-cloud-arrow-up"></i><span>Saving image under selected wet market</span></div>
+                <div class="inspection-progress-step"><i class="fa-solid fa-microchip"></i><span>Retrieving ESP32 sensor readings</span></div>
+                <div class="inspection-progress-step"><i class="fa-solid fa-brain"></i><span>Waiting for backend classification</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed inspection result overlay -->
+    <div id="inspection-result-overlay" role="dialog" aria-modal="true" aria-labelledby="inspection-result-heading">
+        <div class="inspection-result-card">
+            <div class="inspection-result-top">
+                <h3 id="inspection-result-heading"><i class="fa-solid fa-clipboard-check" style="color:var(--primary-red);margin-right:7px;"></i> Meat Inspection Result</h3>
+                <button type="button" class="inspection-result-close" onclick="closeInspectionResult()" aria-label="Close result"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <img id="inspection-result-photo" class="inspection-result-photo" alt="Captured meat sample" hidden>
+            <div id="inspection-result-status" class="inspection-result-status pending">
+                <div class="result-label">PENDING</div>
+                <div class="result-subtitle">Waiting for backend result.</div>
+            </div>
+            <div class="inspection-result-details" id="inspection-result-details"></div>
+            <p class="inspection-result-note" id="inspection-result-meta"></p>
+            <div class="inspection-result-actions">
+                <button type="button" class="btn-primary" onclick="closeInspectionResult()">Done</button>
+                <button type="button" class="camera-close-btn" onclick="closeInspectionResult();openCameraPanel();">Capture Another Sample</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
