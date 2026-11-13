@@ -351,7 +351,7 @@
                                 </div>
 
                                 <div class="camera-container" id="camera-feed-container">
-                                    <video id="pi-camera-video" autoplay playsinline muted></video>
+                                    <img id="pi-camera-video" crossorigin="anonymous" alt="Live Logitech C922 meat inspection camera feed">
                                     <div class="camera-placeholder" id="camera-placeholder"><i class="fa-solid fa-camera"></i><strong>Raspberry Pi Camera Preview</strong><small>Waiting for Raspberry Pi camera connection...</small></div>
                                 </div>
 
@@ -540,6 +540,9 @@
         let lastCapturedImageDataUrl = null;
         // Create this bucket in Supabase Storage, or change this value to your existing bucket name.
         const MEAT_IMAGE_BUCKET = 'meat-captures';
+        // Private HTTPS camera stream: only available to authorized Tailscale devices.
+        const IFRESH_CAMERA_STREAM_URL = 'https://ifresh.tail9f27fb.ts.net/video_feed';
+        let cameraReadyCheckTimer = null;
         let testLocationMap = null;
 
         // Supabase project connection. Keep the publishable key in the frontend; never use service_role here.
@@ -935,19 +938,32 @@
             if (openButton) openButton.hidden = true;
             if (closeButton) closeButton.hidden = false;
 
-            if (video && video.readyState >= 2 && video.videoWidth > 0) {
+            if (video) {
                 video.style.display = 'block';
-                if (placeholder) placeholder.hidden = true;
-                if (status) status.textContent = 'Raspberry Pi camera connected. Ready to capture.';
-            } else {
-                if (video) video.style.display = 'none';
-                if (placeholder) placeholder.hidden = false;
-                if (status) status.textContent = 'Camera workspace opened. Waiting for Raspberry Pi connection.';
+                // Assigning src begins a new MJPEG stream connection.
+                video.removeAttribute('src');
+                video.src = IFRESH_CAMERA_STREAM_URL;
             }
+            if (placeholder) placeholder.hidden = false;
+            if (status) status.textContent = 'Connecting to Logitech C922 through Tailscale...';
+            if (cameraReadyCheckTimer) clearInterval(cameraReadyCheckTimer);
+            cameraReadyCheckTimer = setInterval(() => {
+                if (!workspace || workspace.hidden || !video || !video.getAttribute('src')) return;
+                if (video.naturalWidth > 0) {
+                    if (placeholder) placeholder.hidden = true;
+                    if (status) status.textContent = 'Logitech C922 connected. Select Pork or Beef to capture.';
+                    updateCaptureButtonState();
+                    clearInterval(cameraReadyCheckTimer);
+                    cameraReadyCheckTimer = null;
+                }
+            }, 350);
+            updateCaptureButtonState();
         }
 
         // CLOSE CAMERA WORKSPACE
         function closeCameraPanel() {
+            if (cameraReadyCheckTimer) clearInterval(cameraReadyCheckTimer);
+            cameraReadyCheckTimer = null;
             const workspace = document.getElementById('camera-workspace');
             const openButton = document.getElementById('open-camera-btn');
             const closeButton = document.getElementById('close-camera-btn');
@@ -960,12 +976,9 @@
             const selectedLabel = document.getElementById('selected-meat-label');
             const status = document.getElementById('camera-status');
 
-            if (video && video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-            }
             if (video) {
-                video.pause();
+                // Removing src disconnects the MJPEG request and frees the stream.
+                video.removeAttribute('src');
                 video.style.display = 'none';
             }
             if (placeholder) placeholder.hidden = false;
@@ -991,7 +1004,7 @@
             if (label) label.textContent = `${type} selected for inspection.`;
             const video = document.getElementById('pi-camera-video');
             const captureButton = document.getElementById('capture-meat-btn');
-            if (captureButton) captureButton.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0 && currentMarketId);
+            if (captureButton) captureButton.disabled = !(video && video.naturalWidth > 0 && video.getAttribute('src') && currentMarketId);
         }
 
         function setInspectionLoading(isLoading, message) {
@@ -1105,18 +1118,22 @@
             const video = document.getElementById('pi-camera-video');
             if (!selectedMeatType) { alert('Please select Pork or Beef first.'); return; }
             if (!currentMarketId) { alert('Please select a wet market before capturing a sample.'); return; }
-            if (!video || video.readyState < 2 || !video.videoWidth) { alert('The Raspberry Pi camera is not connected yet.'); return; }
+            if (!video || !video.getAttribute('src') || !video.naturalWidth) { alert('The Logitech C922 camera is not connected yet.'); return; }
 
             const captureButton = document.getElementById('capture-meat-btn');
             let capturedImage = null;
             try {
                 const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                canvas.width = video.naturalWidth;
+                canvas.height = video.naturalHeight;
                 const context = canvas.getContext('2d');
                 if (!context) throw new Error('Unable to initialize image capture.');
                 context.drawImage(video,0,0,canvas.width,canvas.height);
-                capturedImage = canvas.toDataURL('image/jpeg',.92);
+                try {
+                    capturedImage = canvas.toDataURL('image/jpeg',.92);
+                } catch (securityError) {
+                    throw new Error('Camera image capture was blocked by browser security. Check the Tailscale connection and Flask CORS settings.');
+                }
                 lastCapturedImageDataUrl = capturedImage;
                 document.getElementById('captured-meat-image').src = capturedImage;
                 document.getElementById('captured-image-preview').hidden = false;
@@ -1138,7 +1155,7 @@
                 setInspectionLoading(false);
                 alert(error.message || 'Unable to complete the meat inspection.');
             } finally {
-                if (captureButton) captureButton.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0 && selectedMeatType && currentMarketId);
+                updateCaptureButtonState();
             }
         }
 
@@ -1211,7 +1228,7 @@
         function updateCaptureButtonState() {
             const video = document.getElementById('pi-camera-video');
             const button = document.getElementById('capture-meat-btn');
-            if (button) button.disabled = !(video && video.readyState >= 2 && video.videoWidth > 0 && selectedMeatType && currentMarketId);
+            if (button) button.disabled = !(video && video.getAttribute('src') && video.naturalWidth > 0 && selectedMeatType && currentMarketId);
         }
 
         function showGuide(role,button) {
@@ -1332,17 +1349,22 @@
             const video = document.getElementById('pi-camera-video');
             if (!video) return;
 
-            video.addEventListener('loadeddata',() => {
+            video.addEventListener('load',() => {
                 const workspace = document.getElementById('camera-workspace');
                 if (workspace && workspace.hidden) return;
                 document.getElementById('camera-placeholder').hidden = true;
                 video.style.display = 'block';
-                document.getElementById('camera-status').textContent = 'Raspberry Pi camera connected. Ready to capture.';
+                document.getElementById('camera-status').textContent = 'Logitech C922 connected. Select Pork or Beef to capture.';
                 updateCaptureButtonState();
             });
 
             video.addEventListener('error',() => {
-                document.getElementById('camera-status').textContent = 'Camera feed unavailable. Check Raspberry Pi connection.';
+                const workspace = document.getElementById('camera-workspace');
+                if (workspace && workspace.hidden) return;
+                video.style.display = 'none';
+                document.getElementById('camera-placeholder').hidden = false;
+                document.getElementById('camera-status').textContent = 'Camera unavailable. Check Flask, Tailscale, and camera permissions.';
+                updateCaptureButtonState();
             });
         });
 
