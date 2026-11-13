@@ -104,8 +104,8 @@
         .meat-type-card strong { font-size:.82rem; color:var(--text-main); }
         .meat-type-card small { display:none; }
         .selected-meat-label { margin-top:8px; color:var(--text-muted); font-size:.73rem; }
-        .camera-container { position:relative; width:100%; height:350px; background:#101827; border:1px solid #334155; border-radius:15px; overflow:hidden; margin-bottom:15px; }
-        #pi-camera-video { width:100%; height:100%; object-fit:contain; display:none; background:#101827; }
+        .camera-container { position:relative; width:100%; height:auto; aspect-ratio:16/9; background:#101827; border:1px solid #334155; border-radius:15px; overflow:hidden; margin-bottom:15px; }
+        #pi-camera-video { width:100%; height:100%; object-fit:cover; display:none; background:#101827; }
         .camera-placeholder { width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; color:#cbd5e1; text-align:center; padding:20px; }
         .camera-placeholder i { font-size:3rem; color:#94a3b8; }
         .camera-placeholder strong { font-size:.95rem; }
@@ -114,9 +114,6 @@
         .capture-meat-btn { width:auto; min-width:170px; padding:13px 22px; border:none; border-radius:11px; background:linear-gradient(135deg,#276749,#166534); color:white; font-weight:700; cursor:pointer; }
         .capture-meat-btn:disabled { opacity:.45; cursor:not-allowed; box-shadow:none; }
         .camera-status { color:var(--text-muted); font-size:.76rem; }
-        .captured-image-preview { border:1px solid var(--border-color); border-radius:14px; padding:15px; background:#fafafa; margin-top:15px; }
-        .captured-image-preview h4 { font-size:.9rem; margin-bottom:12px; }
-        #captured-meat-image { width:100%; max-height:350px; object-fit:contain; background:#101827; border-radius:10px; }
         .status-panel { margin:15px 0; padding:12px; background:#e2e8f0; color:#2d3748; border-radius:8px; font-size:.8rem; font-weight:bold; text-align:center; border:1px solid #cbd5e0; }
         .filter-chip { background:#edf2f7; color:var(--text-main); border:1px solid var(--border-color); padding:8px 16px; border-radius:20px; font-size:.8rem; font-weight:600; cursor:pointer; transition:all .2s ease; }
         .filter-chip:hover,.filter-chip.active { background:var(--light-red); color:var(--dark-red); border-color:#ffcdd2; }
@@ -179,11 +176,12 @@
         .inspection-result-status.stale { background:var(--warning-bg); color:var(--warning); }
         .inspection-result-status.spoiled { background:var(--danger-bg); color:var(--danger); }
         .inspection-result-status.pending { background:#f1f5f9; color:#475569; }
+        .inspection-result-photo { display:block; width:100%; max-height:300px; object-fit:contain; background:#101827; border-radius:12px; margin:0 0 16px; }
+        .inspection-result-photo[hidden] { display:none; }
         .inspection-result-details { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:15px 0; }
         .inspection-result-metric { padding:12px; border:1px solid var(--border-color); border-radius:10px; }
         .inspection-result-metric small { display:block; color:var(--text-muted); font-size:.7rem; text-transform:uppercase; }
         .inspection-result-metric strong { display:block; margin-top:5px; font-size:1.05rem; overflow-wrap:anywhere; }
-        .inspection-result-photo { width:100%; max-height:260px; object-fit:contain; background:#f8fafc; border-radius:12px; margin:10px 0; }
         .inspection-result-note { color:var(--text-muted); font-size:.78rem; line-height:1.5; }
         .inspection-result-actions { display:flex; gap:10px; margin-top:18px; }
         .inspection-result-actions button { flex:1; }
@@ -211,7 +209,7 @@
             .metrics-row { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
             .metric-box { padding:11px; }
             .metric-value { font-size:1.05rem; }
-            .camera-container { height:min(64vw,300px); min-height:210px; }
+            .camera-container { height:auto; min-height:0; aspect-ratio:16/9; }
             #interactive-map { height:360px; }
             .btn-primary,.camera-open-btn,.camera-close-btn,.capture-meat-btn { min-height:46px; }
             .form-group input,.form-group select { min-height:46px; font-size:16px; }
@@ -360,11 +358,6 @@
                                     <span id="camera-status" class="camera-status">Camera not connected.</span>
                                 </div>
 
-                                <div class="captured-image-preview" id="captured-image-preview" hidden>
-                                    <h4><i class="fa-solid fa-image"></i> Captured Meat Sample</h4>
-                                    <img id="captured-meat-image" alt="Captured meat sample preview">
-                                    <p id="capture-preview-label" style="font-size:.78rem;color:var(--text-muted);margin-top:10px;"></p>
-                                </div>
                             </div>
 
                             <span id="ui-weight-overlay" hidden>--</span>
@@ -537,7 +530,6 @@
         let currentMarketId = null;
         let assignedMarketId = null;
         let selectedMeatType = null;
-        let lastCapturedImageDataUrl = null;
         // Create this bucket in Supabase Storage, or change this value to your existing bucket name.
         const MEAT_IMAGE_BUCKET = 'meat-captures';
         // Private HTTPS camera stream: only available to authorized Tailscale devices.
@@ -969,9 +961,6 @@
             const closeButton = document.getElementById('close-camera-btn');
             const video = document.getElementById('pi-camera-video');
             const placeholder = document.getElementById('camera-placeholder');
-            const capturedPreview = document.getElementById('captured-image-preview');
-            const capturedImage = document.getElementById('captured-meat-image');
-            const captureLabel = document.getElementById('capture-preview-label');
             const captureButton = document.getElementById('capture-meat-btn');
             const selectedLabel = document.getElementById('selected-meat-label');
             const status = document.getElementById('camera-status');
@@ -982,9 +971,6 @@
                 video.style.display = 'none';
             }
             if (placeholder) placeholder.hidden = false;
-            if (capturedPreview) capturedPreview.hidden = true;
-            if (capturedImage) capturedImage.removeAttribute('src');
-            if (captureLabel) captureLabel.textContent = '';
 
             selectedMeatType = null;
             document.querySelectorAll('.meat-type-card').forEach(card => card.classList.remove('active'));
@@ -1059,7 +1045,15 @@
                     item.append(small,strong); details.appendChild(item);
                 });
             }
-            if (photo && photoDataUrl) { photo.src = photoDataUrl; photo.hidden = false; }
+            if (photo) {
+                if (photoDataUrl) {
+                    photo.src = photoDataUrl;
+                    photo.hidden = false;
+                } else {
+                    photo.hidden = true;
+                    photo.removeAttribute('src');
+                }
+            }
             if (meta) meta.textContent = `${marketName || currentMarket || 'Wet market'} • ${created}${record?.id ? ` • Inspection ID: ${record.id}` : ''}`;
             if (latestMeta) latestMeta.textContent = `${marketName || currentMarket || 'Wet market'} • ${created}`;
             const overlay = document.getElementById('inspection-result-overlay');
@@ -1069,6 +1063,8 @@
         function closeInspectionResult() {
             const overlay = document.getElementById('inspection-result-overlay');
             if (overlay) overlay.classList.remove('active');
+            const photo = document.getElementById('inspection-result-photo');
+            if (photo) { photo.hidden = true; photo.removeAttribute('src'); }
         }
 
         function dataUrlToBlob(dataUrl) {
@@ -1134,22 +1130,18 @@
                 } catch (securityError) {
                     throw new Error('Camera image capture was blocked by browser security. Check the Tailscale connection and Flask CORS settings.');
                 }
-                lastCapturedImageDataUrl = capturedImage;
-                document.getElementById('captured-meat-image').src = capturedImage;
-                document.getElementById('captured-image-preview').hidden = false;
-                document.getElementById('capture-preview-label').textContent = `${selectedMeatType} sample captured for ${currentMarket}. Saving image and retrieving backend classification...`;
 
                 if (captureButton) captureButton.disabled = true;
                 setInspectionLoading(true,'Saving the captured image under the selected wet market, then waiting for the backend classification.');
 
                 const inspectionStartedAt = new Date().toISOString();
-                const savedImage = await saveCapturedImageToMarket(capturedImage,currentMarketId,selectedMeatType);
+                await saveCapturedImageToMarket(capturedImage,currentMarketId,selectedMeatType);
                 const record = await waitForBackendClassification(currentMarketId,selectedMeatType,inspectionStartedAt,30000);
 
                 setInspectionLoading(false);
                 renderInspectionResult(record,capturedImage,currentMarket);
-                const savedLabel = document.getElementById('capture-preview-label');
-                if (savedLabel) savedLabel.textContent = `Image saved to Supabase Storage: ${savedImage.path}`;
+                const cameraStatus = document.getElementById('camera-status');
+                if (cameraStatus) cameraStatus.textContent = 'Meat image uploaded to Supabase Storage.';
             } catch (error) {
                 console.error('Meat Inspection Error:',error);
                 setInspectionLoading(false);
@@ -1393,7 +1385,7 @@
                 <h3 id="inspection-result-heading"><i class="fa-solid fa-clipboard-check" style="color:var(--primary-red);margin-right:7px;"></i> Meat Inspection Result</h3>
                 <button type="button" class="inspection-result-close" onclick="closeInspectionResult()" aria-label="Close result"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <img id="inspection-result-photo" class="inspection-result-photo" alt="Captured meat sample" hidden>
+            <img id="inspection-result-photo" class="inspection-result-photo" alt="Captured meat sample for this inspection" hidden>
             <div id="inspection-result-status" class="inspection-result-status pending">
                 <div class="result-label">PENDING</div>
                 <div class="result-subtitle">Waiting for backend result.</div>
