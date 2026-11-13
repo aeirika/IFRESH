@@ -92,18 +92,18 @@
         .camera-open-btn[hidden],.camera-close-btn[hidden] { display:none !important; }
         .camera-workspace { margin-top:20px; }
         .camera-workspace[hidden],.captured-image-preview[hidden],.camera-placeholder[hidden] { display:none !important; }
-        .meat-selection-panel { background:#fafafa; border:1px solid var(--border-color); border-radius:15px; padding:18px; margin-bottom:18px; }
-        .meat-selection-title { font-size:.9rem; font-weight:700; margin-bottom:13px; }
-        .meat-type-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
-        .meat-type-card { padding:20px 12px; border:1px solid rgba(148,163,184,.25); border-radius:15px; background:linear-gradient(145deg,#fff,#f8fafc); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:9px; transition:all .25s ease; }
-        .meat-type-card:hover { transform:translateY(-3px); box-shadow:0 8px 18px rgba(0,0,0,.07); }
-        .meat-type-card.active { border:2px solid var(--primary-red); background:rgba(211,47,47,.055); box-shadow:0 4px 14px rgba(211,47,47,.10); }
-        .meat-type-emoji { width:65px; height:65px; display:flex; align-items:center; justify-content:center; border-radius:20px; font-size:2.2rem; background:rgba(211,47,47,.09); backdrop-filter:blur(8px); }
+        .meat-selection-panel { background:#fafafa; border:1px solid var(--border-color); border-radius:15px; padding:12px 15px; margin-bottom:12px; }
+        .meat-selection-title { font-size:.82rem; font-weight:700; margin-bottom:10px; }
+        .meat-type-grid { display:grid; grid-template-columns:repeat(2,minmax(0,140px)); gap:10px; }
+        .meat-type-card { min-height:46px; padding:7px 10px; border:1px solid rgba(148,163,184,.25); border-radius:10px; background:linear-gradient(145deg,#fff,#f8fafc); cursor:pointer; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px; transition:all .25s ease; }
+        .meat-type-card:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(0,0,0,.07); }
+        .meat-type-card.active { border:2px solid var(--primary-red); background:rgba(211,47,47,.055); box-shadow:0 3px 10px rgba(211,47,47,.10); }
+        .meat-type-emoji { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:1.2rem; flex-shrink:0; background:rgba(211,47,47,.09); backdrop-filter:blur(8px); }
         .pork-emoji { background:rgba(244,114,182,.15); }
         .beef-emoji { background:rgba(220,38,38,.12); }
-        .meat-type-card strong { font-size:.95rem; color:var(--text-main); }
-        .meat-type-card small { font-size:.72rem; color:var(--text-muted); }
-        .selected-meat-label { margin-top:12px; color:var(--text-muted); font-size:.78rem; }
+        .meat-type-card strong { font-size:.82rem; color:var(--text-main); }
+        .meat-type-card small { display:none; }
+        .selected-meat-label { margin-top:8px; color:var(--text-muted); font-size:.73rem; }
         .camera-container { position:relative; width:100%; height:350px; background:#101827; border:1px solid #334155; border-radius:15px; overflow:hidden; margin-bottom:15px; }
         #pi-camera-video { width:100%; height:100%; object-fit:contain; display:none; background:#101827; }
         .camera-placeholder { width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:12px; color:#cbd5e1; text-align:center; padding:20px; }
@@ -223,8 +223,8 @@
         @media (max-width:500px) {
             .splash-logo { width:min(90vw,360px); }
             .splash-tagline { font-size:.95rem; letter-spacing:1px; line-height:1.5; padding:0 8px; }
-            .meat-type-grid { gap:9px; }
-            .meat-type-card { padding:15px 8px; }
+            .meat-type-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+            .meat-type-card { padding:7px 8px; }
             .camera-action-row { align-items:stretch; flex-direction:column; }
             .capture-meat-btn { width:100%; }
             .camera-header-buttons { width:100%; }
